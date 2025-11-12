@@ -1,0 +1,429 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MKGC — Tournament Manager</title>
+  <meta name="description" content="Manage groups, add matches between teams, and auto-generate standings with NRR and points. Save, export, and import tournaments." />
+  <style>
+    :root{--bg:#0b1020;--card:#0f172a;--fg:#e5e7eb;--muted:#9ca3af;--ring:#243048;--accent:#60a5fa}
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#0b1020 0%,#0b1226 100%);color:var(--fg);font:16px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Arial}
+    .max{max-width:960px;margin:40px auto;padding:0 16px}
+    .card{background:linear-gradient(180deg,#0b1226, #0b1226), var(--card);border:1px solid var(--ring);border-radius:16px;padding:18px;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+    h1{font-size:24px;margin:0 0 6px}
+    h2{font-size:18px;margin:0 0 8px}
+    p{margin:0 0 10px;color:var(--muted)}
+    .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:end}
+    label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+    input,select{width:100%;padding:10px;border-radius:10px;border:1px solid var(--ring);background:#0e162b;color:var(--fg)}
+    input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in oklab,var(--accent) 25%, transparent)}
+    .btn{cursor:pointer;padding:10px 12px;border-radius:10px;border:1px solid var(--ring);background:var(--accent);color:#0b1020;font-weight:700}
+    .btn.secondary{background:transparent;color:var(--fg)}
+    .muted{color:var(--muted)}
+    .space{height:6px}
+    .hr{height:1px;background:var(--ring);margin:14px 0}
+    table{width:100%;border-collapse:collapse}
+    th,td{text-align:left;padding:8px;border-bottom:1px solid var(--ring)}
+    th{font-size:12px;color:var(--muted);font-weight:600}
+    .right{text-align:right}
+    .warn{color:#fca5a5;font-size:12px}
+    .ok{color:#86efac;font-size:12px}
+    .inline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  </style>
+</head>
+<body>
+  <header style="background:#0b1226;border-bottom:1px solid #243048;position:sticky;top:0;z-index:10">
+    <nav style="max-width:960px;margin:0 auto;padding:10px 16px;display:flex;gap:14px;align-items:center;">
+      <strong style="margin-right:auto">MKGC Tools</strong>
+      <a href="./" style="text-decoration:none;color:#e5e7eb">Calculator</a>
+      <a href="./tournament.html" style="text-decoration:none;color:#e5e7eb">Tournament &amp; Table</a>
+    </nav>
+  </header>
+
+  <div class="max">
+    <div class="card">
+      <h1>Tournament Manager</h1>
+      <p class="muted">Groups A/B/…, head‑to‑head matches, auto tables (Points → NRR → Wins). Save to browser, export JSON/CSV, import to resume.</p>
+      <div class="hr"></div>
+
+      <div class="card" style="background:#0b1226;border:1px solid var(--ring);box-shadow:none">
+        <h2>Tournament Settings</h2>
+        <div class="row">
+          <div>
+            <label for="fmt">Format (overs per side)</label>
+            <input id="fmt" inputmode="decimal" value="30" />
+          </div>
+          <div>
+            <label for="ptW">Points for Win</label>
+            <input id="ptW" inputmode="numeric" value="2" />
+          </div>
+          <div>
+            <label for="ptT">Points for Tie/No Result</label>
+            <input id="ptT" inputmode="numeric" value="1" />
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <div class="muted">(NRR uses totals; format is informational)</div>
+          </div>
+        </div>
+        <div class="space"></div>
+        <div class="inline">
+          <button class="btn" id="saveLocal">Save to Browser</button>
+          <button class="btn secondary" id="clearLocal">Clear Saved</button>
+          <button class="btn" id="downloadJson">Download JSON</button>
+          <button class="btn" id="downloadCsv">Download CSV</button>
+          <label class="btn secondary" style="cursor:pointer">
+            Import JSON/CSV
+            <input id="importFile" type="file" accept=".json,.csv,text/csv,application/json" style="display:none" />
+          </label>
+          <span id="ioMsg" class="muted"></span>
+        </div>
+      </div>
+
+      <div class="space"></div>
+
+      <div class="card" style="background:#0b1226;border:1px solid var(--ring);box-shadow:none">
+        <h2>Teams</h2>
+        <div class="row">
+          <div>
+            <label for="teamName">Team name</label>
+            <input id="teamName" placeholder="e.g. MKGC" />
+          </div>
+          <div>
+            <label for="groupName">Group</label>
+            <input id="groupName" placeholder="e.g. A" />
+          </div>
+          <div>
+            <label>&nbsp;</label>
+            <button class="btn" id="addTeam">Add Team</button>
+          </div>
+          <div class="col-span" style="grid-column:1/-1"><span class="warn" id="teamErr"></span></div>
+        </div>
+        <div class="space"></div>
+        <table id="teamsTbl"><thead>
+          <tr><th>#</th><th>Team</th><th>Group</th><th class="right">Matches</th><th class="right">W</th><th class="right">T/NR</th><th class="right">L</th><th class="right">Points</th><th></th></tr>
+        </thead><tbody></tbody></table>
+      </div>
+
+      <div class="space"></div>
+
+      <div class="card" style="background:#0b1226;border:1px solid var(--ring);box-shadow:none">
+        <h2>Add Match (between two teams)</h2>
+        <div class="row">
+          <div>
+            <label for="groupSel">Group</label>
+            <select id="groupSel"></select>
+          </div>
+          <div>
+            <label for="teamA">Team A</label>
+            <select id="teamA"></select>
+          </div>
+          <div>
+            <label for="teamB">Team B</label>
+            <select id="teamB"></select>
+          </div>
+          <div><label for="rsA2">A: RS</label><input id="rsA2" inputmode="numeric" placeholder="e.g. 142"></div>
+          <div><label for="ofA2">A: OF</label><input id="ofA2" inputmode="decimal" placeholder="e.g. 19.5"></div>
+          <div><label for="rsB2">B: RS</label><input id="rsB2" inputmode="numeric" placeholder="e.g. 138"></div>
+          <div><label for="ofB2">B: OF</label><input id="ofB2" inputmode="decimal" placeholder="e.g. 20"></div>
+          <div>
+            <label>&nbsp;</label>
+            <button class="btn" id="addH2H">Add Match</button>
+          </div>
+          <div class="col-span" style="grid-column:1/-1"><span class="warn" id="h2hErr"></span></div>
+        </div>
+      </div>
+
+      <div class="space"></div>
+
+      <div class="card" style="background:#0b1226;border:1px solid var(--ring);box-shadow:none">
+        <h2>Tables by Group (auto-sorted by Points → NRR → Wins)</h2>
+        <div id="groupsContainer"></div>
+        <div class="space"></div>
+        <button class="btn secondary" id="resetTournament">New Tournament</button>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const $ = (s, r=document)=>r.querySelector(s);
+    const $$ = (s, r=document)=>Array.from(r.querySelectorAll(s));
+
+    function parseIntStrict(v, name){
+      const n = Number(v);
+      if(!Number.isFinite(n) || !/^\s*\d+\s*$/.test(String(v))) throw new Error(`${name}: enter a whole number`);
+      if(n < 0) throw new Error(`${name}: cannot be negative`);
+      return Math.trunc(n);
+    }
+    function parseOvers(v, name){
+      const s = String(v).trim();
+      if(!s) throw new Error(`${name}: required`);
+      if(!/^\d+(?:\.(\d))?$/.test(s)) throw new Error(`${name}: use format like 19.5 (19 overs, 5 balls)`);
+      if((s.match(/\./g)||[]).length > 1) throw new Error(`${name}: invalid overs format`);
+      const [oStr,bStr] = s.split('.')
+      const overs = Number(oStr);
+      const balls = bStr === undefined ? 0 : Number(bStr);
+      if(!Number.isInteger(overs) || overs < 0) throw new Error(`${name}: invalid overs`);
+      if(!Number.isInteger(balls) || balls < 0 || balls > 5) throw new Error(`${name}: balls must be 0–5`);
+      return overs + balls/6;
+    }
+    function toOversString(oversFloat){
+      const overs = Math.floor(oversFloat + 1e-9);
+      const balls = Math.round((oversFloat - overs) * 6);
+      return balls ? `${overs}.${balls}` : `${overs}`;
+    }
+    function computeNRR(RS, OF, RC, OB){
+      if(OF <= 0 || OB <= 0) throw new Error('Overs must be > 0');
+      return RS/OF - RC/OB;
+    }
+    function formatNRR(n){
+      const sign = n > 0 ? '+' : '';
+      return sign + n.toFixed(3);
+    }
+
+    // ===== Tournament state =====
+    const LS_KEY = 'mkgc_tournament_v1';
+    const teams = new Map();
+    const teamErr = $('#teamErr');
+    const ioMsg = $('#ioMsg');
+
+    function pointsFor(win, tie){
+      const w = Number($('#ptW').value)||0; const t = Number($('#ptT').value)||0; return win*w + tie*t;
+    }
+
+    function addTeam(name){
+      const key = String(name||'').trim();
+      if(!key){ teamErr.textContent = 'Enter a team name'; return; }
+      if(teams.has(key)){ teamErr.textContent = 'Team already exists'; return; }
+      const grp = String($('#groupName').value||'A').trim() || 'A';
+      teams.set(key,{ name:key, group:grp, RS:0, OF:0, RC:0, OB:0, W:0, T:0, L:0, Mat:0, Pts:0 });
+      teamErr.textContent = '';
+      renderTeams(); renderH2HSelects(); renderTables(); autosave();
+    }
+
+    function renderTeams(){
+      const tbody = $('#teamsTbl tbody');
+      tbody.innerHTML='';
+      let i=0;
+      for(const t of teams.values()){
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${++i}</td><td>${t.name}</td><td>${t.group||''}</td><td class=\"right\">${t.Mat}</td><td class="right">${t.W}</td><td class="right">${t.T}</td><td class="right">${t.L}</td><td class="right">${t.Pts}</td><td class="right"><button class="btn secondary" data-del="${t.name}">Remove</button></td>`;
+        tbody.appendChild(tr);
+      }
+      $$('#teamsTbl [data-del]').forEach(btn=>btn.addEventListener('click',ev=>{
+        teams.delete(ev.currentTarget.getAttribute('data-del'));
+        renderTeams(); renderH2HSelects(); renderTables(); autosave();
+      }));
+    }
+
+    function groups(){
+      const s = new Set();
+      for(const t of teams.values()) s.add(t.group||'A');
+      return Array.from(s).sort();
+    }
+
+    function teamsByGroup(grp){
+      return Array.from(teams.values()).filter(t=> (t.group||'A')===grp);
+    }
+
+    function renderH2HSelects(){
+      const gSel = $('#groupSel');
+      const aSel = $('#teamA');
+      const bSel = $('#teamB');
+      const gs = groups();
+      gSel.innerHTML='';
+      gs.forEach(g=>{ const o=document.createElement('option'); o.value=o.textContent=g; gSel.appendChild(o); });
+      const current = gSel.value || gs[0];
+      gSel.value = current;
+      const list = teamsByGroup(current);
+      const fill = (sel)=>{ sel.innerHTML=''; list.forEach(t=>{ const o=document.createElement('option'); o.value=o.textContent=t.name; sel.appendChild(o); }); };
+      fill(aSel); fill(bSel);
+      if(aSel.value===bSel.value && bSel.options.length>1){ bSel.selectedIndex = 1; }
+      gSel.onchange = ()=>renderH2HSelects();
+    }
+
+    function addH2HMatch(){
+      const err = $('#h2hErr'); err.textContent = '';
+      const g = $('#groupSel').value;
+      const a = $('#teamA').value; const b = $('#teamB').value;
+      if(!a || !b || a===b){ err.textContent = 'Pick two different teams in the same group'; return; }
+      try{
+        const aRS = parseIntStrict($('#rsA2').value,'A: RS');
+        const aOF = parseOvers($('#ofA2').value,'A: OF');
+        const bRS = parseIntStrict($('#rsB2').value,'B: RS');
+        const bOF = parseOvers($('#ofB2').value,'B: OF');
+        const A = teams.get(a); const B = teams.get(b);
+        if(!A || !B || (A.group||'A')!==g || (B.group||'A')!==g){ err.textContent='Teams must be in selected group'; return; }
+        // Update aggregates both sides
+        A.RS += aRS; A.OF += aOF; A.RC += bRS; A.OB += bOF; A.Mat += 1;
+        B.RS += bRS; B.OF += bOF; B.RC += aRS; B.OB += aOF; B.Mat += 1;
+        if(aRS>bRS){ A.W+=1; B.L+=1; }
+        else if(bRS>aRS){ B.W+=1; A.L+=1; }
+        else { A.T+=1; B.T+=1; }
+        A.Pts = pointsFor(A.W, A.T);
+        B.Pts = pointsFor(B.W, B.T);
+        ['#rsA2','#ofA2','#rsB2','#ofB2'].forEach(sel=>$(sel).value='');
+        renderTeams(); renderTables(); renderH2HSelects(); autosave();
+      }catch(e){ err.textContent = e.message; }
+    }
+
+    function computeTeamNRR(t){
+      if(t.OF<=0 || t.OB<=0) return 0;
+      return (t.RS/t.OF) - (t.RC/t.OB);
+    }
+
+    function renderTables(){
+      const wrap = $('#groupsContainer');
+      wrap.innerHTML='';
+      const byGroup = new Map();
+      for(const t of teams.values()){
+        const g = t.group||'A';
+        if(!byGroup.has(g)) byGroup.set(g,[]);
+        byGroup.get(g).push(t);
+      }
+      const grpNames = Array.from(byGroup.keys()).sort();
+      grpNames.forEach(g=>{
+        const arr = byGroup.get(g);
+        arr.sort((a,b)=>{
+          if(b.Pts!==a.Pts) return b.Pts-a.Pts;
+          const nrrA = computeTeamNRR(a); const nrrB = computeTeamNRR(b);
+          if(nrrB!==nrrA) return nrrB - nrrA;
+          if(b.W!==a.W) return b.W-a.W;
+          return a.name.localeCompare(b.name);
+        });
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.style.background = '#0b1226';
+        card.style.boxShadow = 'none';
+        card.innerHTML = `<h3 style=\"margin:0 0 6px;font-size:16px\">Group ${g}</h3>
+          <div class=\"inline\" style=\"margin:6px 0\">
+            <button class=\"btn secondary\" data-exp-group=\"${g}\">Export Group CSV</button>
+          </div>
+          <table class=\"mini\"><thead>
+            <tr><th>Pos</th><th>Team</th><th class=\"right\">Mat</th><th class=\"right\">W</th><th class=\"right\">T/NR</th><th class=\"right\">L</th><th class=\"right\">RS</th><th class=\"right\">OF</th><th class=\"right\">RC</th><th class=\"right\">OB</th><th class=\"right\">NRR</th><th class=\"right\">Pts</th></tr>
+          </thead><tbody></tbody></table>`;
+        const tbody = card.querySelector('tbody');
+        arr.forEach((t,idx)=>{
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${idx+1}</td><td>${t.name}</td><td class=\"right\">${t.Mat}</td><td class=\"right\">${t.W}</td><td class=\"right\">${t.T}</td><td class=\"right\">${t.L}</td><td class=\"right\">${t.RS}</td><td class=\"right\">${toOversString(t.OF)}</td><td class=\"right\">${t.RC}</td><td class=\"right\">${toOversString(t.OB)}</td><td class=\"right\">${formatNRR(computeTeamNRR(t))}</td><td class=\"right\">${t.Pts}</td>`;
+          tbody.appendChild(tr);
+        });
+        wrap.appendChild(card);
+      });
+      // bind group CSV buttons
+      $$('[data-exp-group]').forEach(btn=>btn.addEventListener('click',()=>downloadCsv(btn.getAttribute('data-exp-group'))));
+    }
+
+    // ===== Persistence & I/O =====
+    function snapshot(){
+      return {
+        meta: {
+          fmt: String($('#fmt').value||''),
+          ptW: Number($('#ptW').value)||0,
+          ptT: Number($('#ptT').value)||0,
+          savedAt: new Date().toISOString()
+        },
+        teams: Array.from(teams.values())
+      };
+    }
+
+    function restore(data){
+      teams.clear();
+      (data.teams||[]).forEach(t=>{
+        const obj = { name:String(t.name), group:String(t.group||'A'), RS:+t.RS||0, OF:+t.OF||0, RC:+t.RC||0, OB:+t.OB||0, W:+t.W||0, T:+t.T||0, L:+t.L||0, Mat:+t.Mat||(+t.W||0)+(+t.T||0)+(+t.L||0), Pts:+t.Pts||0 };
+        teams.set(obj.name, obj);
+      });
+      if(data.meta){ $('#fmt').value = data.meta.fmt||''; $('#ptW').value = data.meta.ptW||0; $('#ptT').value = data.meta.ptT||0; }
+      renderTeams(); renderH2HSelects(); renderTables();
+    }
+
+    function autosave(){
+      try{ localStorage.setItem(LS_KEY, JSON.stringify(snapshot())); ioMsg.textContent = 'Saved'; setTimeout(()=>ioMsg.textContent='',1200); }catch(e){ console.error(e); }
+    }
+
+    function loadLocal(){
+      try{ const raw = localStorage.getItem(LS_KEY); if(raw){ restore(JSON.parse(raw)); ioMsg.textContent = 'Loaded from browser'; setTimeout(()=>ioMsg.textContent='',1500);} }catch(e){ console.error(e); }
+    }
+
+    function download(blob, filename){
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
+
+    function downloadJson(){
+      const blob = new Blob([JSON.stringify(snapshot(), null, 2)], {type:'application/json'});
+      download(blob, `tournament_${new Date().toISOString().slice(0,10)}.json`);
+    }
+
+    function csvEscape(s){ return '"' + String(s).replace(/"/g,'""') + '"'; }
+    function toCsv(arr){
+      const header = ['group','team','Mat','W','T','L','RS','OF','RC','OB','NRR','Pts'];
+      const rows = arr.map(t=>[
+        t.group, t.name, t.Mat, t.W, t.T, t.L, t.RS, toOversString(t.OF), t.RC, toOversString(t.OB), formatNRR(computeTeamNRR(t)), t.Pts
+      ]);
+      return [header.join(','), ...rows.map(r=>r.map(csvEscape).join(','))].join('\n');
+    }
+
+    function downloadCsv(groupName=null){
+      let data = Array.from(teams.values());
+      if(groupName){ data = data.filter(t=> (t.group||'A')===groupName); }
+      const blob = new Blob([toCsv(data)], {type:'text/csv'});
+      download(blob, `tournament_${groupName||'all'}_${new Date().toISOString().slice(0,10)}.csv`);
+    }
+
+    function parseCsv(text){
+      const lines = text.split(/\r?\n/).filter(l=>l.trim().length>0);
+      if(lines.length<2) throw new Error('CSV has no data');
+      const header = lines[0].split(',').map(h=>h.trim().toLowerCase());
+      const idx = (k)=>header.indexOf(k);
+      const need = ['team','group','rs','of','rc','ob'];
+      need.forEach(k=>{ if(idx(k)===-1) throw new Error(`CSV missing column: ${k}`); });
+      const out = [];
+      for(let i=1;i<lines.length;i++){
+        const cols = lines[i].match(/\"([^\"]*)\"|[^,]+/g) || [];
+        const get = (k)=> (cols[idx(k)]||'').replace(/^\"|\"$/g,'');
+        const name = get('team'); const group = get('group')||'A';
+        const RS = Number(get('rs'))||0; const OF = parseOvers(get('of'),'OF');
+        const RC = Number(get('rc'))||0; const OB = parseOvers(get('ob'),'OB');
+        const W = Number(get('w'))||0; const T = Number(get('t'))||0; const L = Number(get('l'))||0;
+        const Mat = Number(get('mat')) || (W+T+L);
+        const Pts = Number(get('pts')) || 0;
+        out.push({ name, group, RS, OF, RC, OB, W, T, L, Mat, Pts });
+      }
+      return { teams: out, meta: {} };
+    }
+
+    function importText(text){
+      let data;
+      const s = text.trim();
+      try{
+        if(s[0]==='{' || s[0]==='['){ data = JSON.parse(s); data = Array.isArray(data) ? {teams:data, meta:{}} : data; }
+        else { data = parseCsv(text); }
+      }catch(e){ throw new Error('Import failed: invalid JSON/CSV'); }
+      restore(data); autosave(); ioMsg.textContent = 'Imported'; setTimeout(()=>ioMsg.textContent='',1500);
+    }
+
+    // ===== Wire up events =====
+    $('#addTeam').addEventListener('click',()=>addTeam($('#teamName').value));
+    $('#addH2H').addEventListener('click', addH2HMatch);
+    $('#resetTournament').addEventListener('click',()=>{ teams.clear(); renderTeams(); renderH2HSelects(); renderTables(); autosave(); });
+    $('#saveLocal').addEventListener('click', autosave);
+    $('#clearLocal').addEventListener('click', ()=>{ localStorage.removeItem(LS_KEY); ioMsg.textContent='Cleared saved copy'; setTimeout(()=>ioMsg.textContent='',1500); });
+    $('#downloadJson').addEventListener('click', downloadJson);
+    $('#downloadCsv').addEventListener('click', ()=>downloadCsv(null));
+    $('#importFile').addEventListener('change', (ev)=>{
+      const file = ev.target.files && ev.target.files[0]; if(!file) return;
+      const reader = new FileReader();
+      reader.onload = ()=>{ try{ importText(String(reader.result||'')); }catch(e){ alert(e.message); } finally { ev.target.value=''; } };
+      reader.readAsText(file);
+    });
+
+    // init
+    renderTeams(); renderH2HSelects(); renderTables();
+    loadLocal();
+  </script>
+</body>
+</html>
