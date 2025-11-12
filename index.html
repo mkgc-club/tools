@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Net Run Rate Calculator</title>
+  <meta name="description" content="Single‑page Net Run Rate (NRR) calculator with multi‑match aggregator. Host anywhere and embed via iframe." />
+  <style>
+    :root{--bg:#0b1020;--card:#0f172a;--fg:#e5e7eb;--muted:#9ca3af;--ring:#243048;--accent:#60a5fa}
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#0b1020 0%,#0b1226 100%);color:var(--fg);font:16px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Arial}
+    .max{max-width:960px;margin:40px auto;padding:0 16px}
+    .card{background:linear-gradient(180deg,#0b1226, #0b1226), var(--card);border:1px solid var(--ring);border-radius:16px;padding:18px;box-shadow:0 12px 40px rgba(0,0,0,.25)}
+    h1{font-size:24px;margin:0 0 6px}
+    p{margin:0 0 10px;color:var(--muted)}
+    .tag{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid var(--ring);color:var(--muted);font-size:12px}
+    .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+    .row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:end}
+    label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+    input{width:100%;padding:10px;border-radius:10px;border:1px solid var(--ring);background:#0e162b;color:var(--fg)}
+    input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in oklab,var(--accent) 25%, transparent)}
+    .btn{cursor:pointer;padding:10px 12px;border-radius:10px;border:1px solid var(--ring);background:var(--accent);color:#0b1020;font-weight:700}
+    .btn.secondary{background:transparent;color:var(--fg)}
+    .muted{color:var(--muted)}
+    .space{height:6px}
+    .hr{height:1px;background:var(--ring);margin:14px 0}
+    .result{margin-top:12px;font-size:18px;font-weight:800}
+    table{width:100%;border-collapse:collapse}
+    th,td{text-align:left;padding:8px;border-bottom:1px solid var(--ring)}
+    th{font-size:12px;color:var(--muted);font-weight:600}
+    .right{text-align:right}
+    .warn{color:#fca5a5;font-size:12px}
+    footer{margin:20px 0;color:var(--muted);font-size:12px}
+    @media (max-width:840px){.grid,.row{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:520px){.grid,.row{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="max">
+    <div class="card">
+      <h1>Net Run Rate Calculator</h1>
+      <p><span class="tag">NRR = (RS/OF) − (RC/OB)</span> <span class="muted">&nbsp;Type overs like <strong>19.5</strong> (19 overs, 5 balls)</span></p>
+      <div class="space"></div>
+      <div class="grid">
+        <div><label for="rs">Runs Scored (RS)</label><input id="rs" inputmode="numeric" placeholder="e.g. 142"></div>
+        <div><label for="of">Overs Faced (OF)</label><input id="of" inputmode="decimal" placeholder="e.g. 19.5"></div>
+        <div><label for="rc">Runs Conceded (RC)</label><input id="rc" inputmode="numeric" placeholder="e.g. 138"></div>
+        <div><label for="ob">Overs Bowled (OB)</label><input id="ob" inputmode="decimal" placeholder="e.g. 20"></div>
+      </div>
+      <div class="space"></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn" id="calc">Calculate</button>
+        <button class="btn secondary" id="clear">Clear</button>
+        <span class="warn" id="err"></span>
+      </div>
+      <div class="result" id="nrrOut">NRR: —</div>
+
+      <div class="hr"></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><strong>Multi‑match aggregator</strong><span class="muted">(adds matches to compute tournament/team NRR)</span></div>
+      <div class="space"></div>
+      <div class="row">
+        <div><label for="rsA">RS</label><input id="rsA" inputmode="numeric" placeholder="e.g. 142"></div>
+        <div><label for="ofA">OF</label><input id="ofA" inputmode="decimal" placeholder="e.g. 19.5"></div>
+        <div><label for="rcA">RC</label><input id="rcA" inputmode="numeric" placeholder="e.g. 138"></div>
+        <div><label for="obA">OB</label><input id="obA" inputmode="decimal" placeholder="e.g. 20"></div>
+      </div>
+      <div class="space"></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn" id="add">Add Match</button>
+        <button class="btn secondary" id="reset">Reset List</button>
+        <span class="warn" id="errA"></span>
+      </div>
+      <div class="space"></div>
+      <table id="tbl"><thead>
+        <tr><th>#</th><th class="right">RS</th><th class="right">OF</th><th class="right">RC</th><th class="right">OB</th><th class="right">Match NRR</th><th></th></tr>
+      </thead><tbody></tbody>
+      <tfoot>
+        <tr><th>Totals</th><th class="right" id="tRS">0</th><th class="right" id="tOF">0</th><th class="right" id="tRC">0</th><th class="right" id="tOB">0</th><th class="right" id="tNRR">—</th><th></th></tr>
+      </tfoot></table>
+      <footer>Tip: In cricket notation, <strong>47.3</strong> means 47 overs + 3 balls (balls are base‑6, not base‑10) — that equals <strong>47.5</strong> overs in decimal. Balls must be 0–5.</footer>
+    </div>
+  </div>
+
+  <script>
+    const $ = (s, r=document)=>r.querySelector(s);
+    const $$ = (s, r=document)=>Array.from(r.querySelectorAll(s));
+
+    function parseIntStrict(v, name){
+      const n = Number(v);
+      if(!Number.isFinite(n) || !/^\s*\d+\s*$/.test(String(v))) throw new Error(`${name}: enter a whole number`);
+      if(n < 0) throw new Error(`${name}: cannot be negative`);
+      return Math.trunc(n);
+    }
+    function parseOvers(v, name){
+      const s = String(v).trim();
+      if(!s) throw new Error(`${name}: required`);
+      if(!/^\d+(?:\.(\d))?$/.test(s)) throw new Error(`${name}: use format like 19.5 (19 overs, 5 balls)`);
+      const [oStr,bStr] = s.split('.');
+      const overs = Number(oStr);
+      const balls = bStr === undefined ? 0 : Number(bStr);
+      if(!Number.isInteger(overs) || overs < 0) throw new Error(`${name}: invalid overs`);
+      if(!Number.isInteger(balls) || balls < 0 || balls > 5) throw new Error(`${name}: balls must be 0–5`);
+      return overs + balls/6;
+    }
+    function toOversString(oversFloat){
+      const overs = Math.floor(oversFloat + 1e-9);
+      const balls = Math.round((oversFloat - overs) * 6);
+      return balls ? `${overs}.${balls}` : `${overs}`;
+    }
+    function computeNRR(RS, OF, RC, OB){
+      if(OF <= 0 || OB <= 0) throw new Error('Overs must be > 0');
+      return RS/OF - RC/OB;
+    }
+    function formatNRR(n){
+      const sign = n > 0 ? '+' : '';
+      return sign + n.toFixed(3);
+    }
+
+    // Single calculator handlers
+    $('#calc').addEventListener('click', () => {
+      $('#err').textContent = '';
+      try{
+        const RS = parseIntStrict($('#rs').value,'Runs Scored');
+        const OF = parseOvers($('#of').value,'Overs Faced');
+        const RC = parseIntStrict($('#rc').value,'Runs Conceded');
+        const OB = parseOvers($('#ob').value,'Overs Bowled');
+        const nrr = computeNRR(RS,OF,RC,OB);
+        $('#nrrOut').textContent = `NRR: ${formatNRR(nrr)}`;
+      }catch(e){
+        $('#err').textContent = e.message;
+        $('#nrrOut').textContent = 'NRR: —';
+      }
+    });
+    $('#clear').addEventListener('click', ()=>{
+      ['#rs','#of','#rc','#ob'].forEach(sel => $(sel).value='');
+      $('#err').textContent = '';
+      $('#nrrOut').textContent = 'NRR: —';
+    });
+
+    // Aggregator
+    const rows = [];
+    function refresh(){
+      const tbody = $('#tbl tbody');
+      tbody.innerHTML = '';
+      let tRS=0,tOF=0,tRC=0,tOB=0;
+      rows.forEach((r,idx)=>{
+        tRS+=r.RS; tOF+=r.OF; tRC+=r.RC; tOB+=r.OB;
+        const tr = document.createElement('tr');
+        const mNRR = computeNRR(r.RS,r.OF,r.RC,r.OB);
+        tr.innerHTML = `<td>${idx+1}</td>
+          <td class="right">${r.RS}</td>
+          <td class="right">${toOversString(r.OF)}</td>
+          <td class="right">${r.RC}</td>
+          <td class="right">${toOversString(r.OB)}</td>
+          <td class="right">${formatNRR(mNRR)}</td>
+          <td class="right"><button class="btn secondary" data-i="${idx}">Remove</button></td>`;
+        tbody.appendChild(tr);
+      });
+      $('#tRS').textContent = String(tRS);
+      $('#tOF').textContent = toOversString(tOF);
+      $('#tRC').textContent = String(tRC);
+      $('#tOB').textContent = toOversString(tOB);
+      $('#tNRR').textContent = (tOF>0 && tOB>0) ? formatNRR(computeNRR(tRS,tOF,tRC,tOB)) : '—';
+      $$('#tbl button[data-i]').forEach(btn=>btn.addEventListener('click',ev=>{
+        rows.splice(Number(ev.currentTarget.getAttribute('data-i')),1);
+        refresh();
+      }));
+    }
+    $('#add').addEventListener('click',()=>{
+      $('#errA').textContent = '';
+      try{
+        const row = {
+          RS: parseIntStrict($('#rsA').value,'RS'),
+          OF: parseOvers($('#ofA').value,'OF'),
+          RC: parseIntStrict($('#rcA').value,'RC'),
+          OB: parseOvers($('#obA').value,'OB')
+        };
+        rows.push(row);
+        ['#rsA','#ofA','#rcA','#obA'].forEach(sel => $(sel).value='');
+        refresh();
+      }catch(e){ $('#errA').textContent = e.message; }
+    });
+    $('#reset').addEventListener('click',()=>{ rows.length = 0; refresh(); });
+    refresh();
+  </script>
+</body>
+</html>
