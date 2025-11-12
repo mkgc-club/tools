@@ -7,28 +7,16 @@
   <meta name="description" content="NRR calculator with aggregator and all-out adjustment (uses format overs when a side is all out)." />
   <style>
     :root{
-      --navy:#0a1e49;
-      --navy-2:#0f275e;
-      --gold:#c89d2d;
-      --gold-2:#e0b84a;
-      --ink:#0b1020;
-      --muted:#5b6b86;
-      --ring:#e5e8f0;
-      --card:#ffffff;
-      --bg:#ffffff;
+      --navy:#0a1e49; --navy-2:#0f275e; --gold:#c89d2d; --gold-2:#e0b84a;
+      --ink:#0b1020; --muted:#5b6b86; --ring:#e5e8f0; --card:#ffffff; --bg:#ffffff;
       --shadow:0 8px 24px rgba(10,30,73,.08);
     }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{margin:0;background:var(--bg);color:var(--ink);font:15.5px/1.6 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Arial}
     a{color:inherit}
-
     .max{max-width:1100px;margin:0 auto;padding:0 20px}
-    header{
-      background:linear-gradient(180deg,var(--navy-2),var(--navy));
-      color:#fff; position:sticky; top:0; z-index:20;
-      box-shadow:0 6px 16px rgba(0,0,0,.2);
-    }
+    header{background:linear-gradient(180deg,var(--navy-2),var(--navy));color:#fff; position:sticky; top:0; z-index:20; box-shadow:0 6px 16px rgba(0,0,0,.2);}
     nav.wrap{display:flex;align-items:center;gap:16px;padding:12px 20px}
     .brand{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:.4px;text-decoration:none;color:inherit}
     .brand img{height:40px;width:auto;display:block}
@@ -41,40 +29,28 @@
     .hero .max{padding:18px 20px}
     .hero h1{margin:0;font-size:26px;color:#0a1e49}
     .hero p{margin:6px 0 0;color:#294065}
-
     .container{max-width:1100px;margin:28px auto;padding:0 20px}
     .card{background:var(--card);border:1px solid var(--ring);border-radius:16px;padding:18px;box-shadow:var(--shadow)}
-    h1{font-size:22px;margin:0 0 6px}
-    h2{font-size:18px;margin:0 0 10px}
-    p{margin:0 0 10px;color:var(--muted)}
-
+    h1{font-size:22px;margin:0 0 6px} h2{font-size:18px;margin:0 0 10px} p{margin:0 0 10px;color:var(--muted)}
     .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
     .row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:end}
     label{display:block;font-size:12px;color:#566981;margin:0 0 6px}
+    .label-inline{display:inline-flex;align-items:center;gap:8px;margin:0;color:inherit;font-size:14px}
     input,select{width:100%;padding:11px 12px;border-radius:12px;border:1px solid #d8deea;background:#fff;color:#0a1733}
     input:focus,select:focus{outline:none;border-color:var(--gold-2);box-shadow:0 0 0 3px rgba(224,184,74,.2)}
-
     .btn{cursor:pointer;padding:10px 14px;border-radius:999px;border:1px solid rgba(224,184,74,.6);background:var(--gold-2);color:#08163a;font-weight:800;letter-spacing:.2px}
-    .btn:hover{filter:brightness(1.04)}
-    .btn.secondary{background:#fff;color:#0a1733;border-color:#cfd7e6}
-    .btn.secondary:hover{background:#f6f8fc}
-
-    .muted{color:var(--muted)}
-    .space{height:8px}
-    .hr{height:1px;background:var(--ring);margin:16px 0}
-    .result{margin-top:12px;font-size:18px;font-weight:800;color:#0a1e49}
-
+    .btn:hover{filter:brightness(1.04)} .btn.secondary{background:#fff;color:#0a1733;border-color:#cfd7e6} .btn.secondary:hover{background:#f6f8fc}
+    .muted{color:var(--muted)} .space{height:8px} .hr{height:1px;background:var(--ring);margin:16px 0} .result{margin-top:12px;font-size:18px;font-weight:800;color:#0a1e49}
     table{width:100%;border-collapse:separate;border-spacing:0}
     th,td{text-align:left;padding:9px 10px;border-bottom:1px solid #eef2f7}
-    th{font-size:12px;color:#27406a;font-weight:800;background:#f7f9fc}
-    tbody tr:hover{background:#fafcff}
-    .right{text-align:right}
-    .warn{color:#b00000;font-size:12px}
-    footer{margin:22px 0;color:#53657f;font-size:12px;text-align:center}
-
-    @media (max-width:980px){.grid,.row{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media (max-width:560px){.grid,.row{grid-template-columns:1fr}}
-  </style>
+    th{font-size:12px;color:#27406a;font-weight:800;background:#f7f9fc} tbody tr:hover{background:#fafcff}
+    .right{text-align:right} .warn{color:#b00000;font-size:12px} footer{margin:22px 0;color:#53657f;font-size:12px;text-align:center}
+    @media (max-width:980px){.grid,.row{grid-template-columns:repeat(2,minmax(0,1fr))}} @media (max-width:560px){.grid,.row{grid-template-columns:1fr}}
+  
+    .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+    .table-wrap table{min-width:640px}
+    
+</style>
 </head>
 <body>
   <header>
@@ -118,8 +94,8 @@
       </div>
       <div class="space"></div>
       <div class="inline" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-        <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="ourAllOut"> Batting all out</label>
-        <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="oppAllOut"> Opposition all out</label>
+        <label class="label-inline"><input type="checkbox" id="ourAllOut"> Batting all out</label>
+        <label class="label-inline"><input type="checkbox" id="oppAllOut"> Opposition all out</label>
       </div>
       <div class="space"></div>
       <div class="inline" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
@@ -140,8 +116,8 @@
         <div style="grid-column: span 2">
           <label>&nbsp;</label>
           <div class="inline" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-            <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="rowOurAllOut"> Batting all out</label>
-            <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="rowOppAllOut"> Opposition all out</label>
+            <label class="label-inline"><input type="checkbox" id="rowOurAllOut"> Batting all out</label>
+            <label class="label-inline"><input type="checkbox" id="rowOppAllOut"> Opposition all out</label>
           </div>
         </div>
       </div>
@@ -152,12 +128,12 @@
         <span class="warn" id="errA"></span>
       </div>
       <div class="space"></div>
-      <table id="tbl"><thead>
+      <div class="table-wrap"><table id="tbl"><thead>
         <tr><th>#</th><th class="right">RS</th><th class="right">OF</th><th class="right">RC</th><th class="right">OB</th><th class="right">AllOut</th><th class="right">Match NRR</th><th></th></tr>
       </thead><tbody></tbody>
       <tfoot>
         <tr><th>Totals</th><th class="right" id="tRS">0</th><th class="right" id="tOF">0</th><th class="right" id="tRC">0</th><th class="right" id="tOB">0</th><th></th><th class="right" id="tNRR">—</th><th></th></tr>
-      </tfoot></table>
+      </tfoot></table></div>
       <footer>Tip: In cricket notation, <strong>47.3</strong> means 47 overs + 3 balls (balls are base-6, not base-10) — that equals <strong>47.5</strong> overs in decimal. Balls must be 0–5.</footer>
     </div>
   </main>
@@ -168,15 +144,15 @@
 
     function parseIntStrict(v, name){
       const n = Number(v);
-      if(!Number.isFinite(n) || !/^\\s*\\d+\\s*$/.test(String(v))) throw new Error(`${name}: enter a whole number`);
+      if(!Number.isFinite(n) || !/^\s*\d+\s*$/.test(String(v))) throw new Error(`${name}: enter a whole number`);
       if(n < 0) throw new Error(`${name}: cannot be negative`);
       return Math.trunc(n);
     }
     function parseOvers(v, name){
       const s = String(v).trim();
       if(!s) throw new Error(`${name}: required`);
-      if(!/^\\d+(?:\\.(\\d))?$/.test(s)) throw new Error(`${name}: use format like 19.5 (19 overs, 5 balls)`);
-      if((s.match(/\\./g)||[]).length > 1) throw new Error(`${name}: invalid overs format`);
+      if(!/^\d+(?:\.(\d))?$/.test(s)) throw new Error(`${name}: use format like 19.5 (19 overs, 5 balls)`);
+      if((s.match(/\./g)||[]).length > 1) throw new Error(`${name}: invalid overs format`);
       const [oStr,bStr] = s.split('.');
       const overs = Number(oStr);
       const balls = bStr === undefined ? 0 : Number(bStr);
