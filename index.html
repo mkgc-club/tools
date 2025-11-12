@@ -36,6 +36,14 @@
   </style>
 </head>
 <body>
+  <header style="background:#0b1226;border-bottom:1px solid #243048;position:sticky;top:0;z-index:10">
+    <nav style="max-width:960px;margin:0 auto;padding:10px 16px;display:flex;gap:14px;align-items:center;">
+      <strong style="margin-right:auto">MKGC Tools</strong>
+      <a href="./" style="text-decoration:none;color:#e5e7eb">Calculator</a>
+      <a href="./tournament.html" style="text-decoration:none;color:#e5e7eb">Tournament &amp; Table</a>
+    </nav>
+  </header>
+
   <div class="max">
     <div class="card">
       <h1>Net Run Rate Calculator</h1>
@@ -91,17 +99,20 @@
       if(n < 0) throw new Error(`${name}: cannot be negative`);
       return Math.trunc(n);
     }
+
     function parseOvers(v, name){
       const s = String(v).trim();
       if(!s) throw new Error(`${name}: required`);
       if(!/^\d+(?:\.(\d))?$/.test(s)) throw new Error(`${name}: use format like 19.5 (19 overs, 5 balls)`);
-      const [oStr,bStr] = s.split('.');
+      if((s.match(/\./g)||[]).length > 1) throw new Error(`${name}: invalid overs format`);
+      const [oStr,bStr] = s.split('.')
       const overs = Number(oStr);
       const balls = bStr === undefined ? 0 : Number(bStr);
       if(!Number.isInteger(overs) || overs < 0) throw new Error(`${name}: invalid overs`);
       if(!Number.isInteger(balls) || balls < 0 || balls > 5) throw new Error(`${name}: balls must be 0–5`);
       return overs + balls/6;
     }
+
     function toOversString(oversFloat){
       const overs = Math.floor(oversFloat + 1e-9);
       const balls = Math.round((oversFloat - overs) * 6);
@@ -116,7 +127,6 @@
       return sign + n.toFixed(3);
     }
 
-    // Single calculator handlers
     $('#calc').addEventListener('click', () => {
       $('#err').textContent = '';
       try{
@@ -131,13 +141,13 @@
         $('#nrrOut').textContent = 'NRR: —';
       }
     });
+
     $('#clear').addEventListener('click', ()=>{
       ['#rs','#of','#rc','#ob'].forEach(sel => $(sel).value='');
       $('#err').textContent = '';
       $('#nrrOut').textContent = 'NRR: —';
     });
 
-    // Aggregator
     const rows = [];
     function refresh(){
       const tbody = $('#tbl tbody');
@@ -166,6 +176,7 @@
         refresh();
       }));
     }
+
     $('#add').addEventListener('click',()=>{
       $('#errA').textContent = '';
       try{
@@ -180,6 +191,7 @@
         refresh();
       }catch(e){ $('#errA').textContent = e.message; }
     });
+
     $('#reset').addEventListener('click',()=>{ rows.length = 0; refresh(); });
     refresh();
   </script>
