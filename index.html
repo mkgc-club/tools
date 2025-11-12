@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Net Run Rate Calculator</title>
-  <meta name="description" content="Single‑page Net Run Rate (NRR) calculator with multi‑match aggregator. Host anywhere and embed via iframe." />
+  <title>Net Run Rate Calculator — All-Out Aware</title>
+  <meta name="description" content="NRR calculator with aggregator and all-out adjustment (uses format overs when a side is all out)." />
   <style>
     :root{--bg:#0b1020;--card:#0f172a;--fg:#e5e7eb;--muted:#9ca3af;--ring:#243048;--accent:#60a5fa}
     *{box-sizing:border-box}
@@ -17,8 +17,8 @@
     .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
     .row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:end}
     label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
-    input{width:100%;padding:10px;border-radius:10px;border:1px solid var(--ring);background:#0e162b;color:var(--fg)}
-    input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in oklab,var(--accent) 25%, transparent)}
+    input, select{width:100%;padding:10px;border-radius:10px;border:1px solid var(--ring);background:#0e162b;color:var(--fg)}
+    input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in oklab,var(--accent) 25%, transparent)}
     .btn{cursor:pointer;padding:10px 12px;border-radius:10px;border:1px solid var(--ring);background:var(--accent);color:#0b1020;font-weight:700}
     .btn.secondary{background:transparent;color:var(--fg)}
     .muted{color:var(--muted)}
@@ -30,6 +30,7 @@
     th{font-size:12px;color:var(--muted);font-weight:600}
     .right{text-align:right}
     .warn{color:#fca5a5;font-size:12px}
+    .inline{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
     footer{margin:20px 0;color:var(--muted);font-size:12px}
     @media (max-width:840px){.grid,.row{grid-template-columns:repeat(2,minmax(0,1fr))}}
     @media (max-width:520px){.grid,.row{grid-template-columns:1fr}}
@@ -48,7 +49,19 @@
     <div class="card">
       <h1>Net Run Rate Calculator</h1>
       <p><span class="tag">NRR = (RS/OF) − (RC/OB)</span> <span class="muted">&nbsp;Type overs like <strong>19.5</strong> (19 overs, 5 balls)</span></p>
-      <div class="space"></div>
+
+      <div class="card" style="background:#0b1226;border:1px solid var(--ring);box-shadow:none;margin:10px 0 14px">
+        <div class="row">
+          <div>
+            <label for="fmt">Format (overs per side)</label>
+            <input id="fmt" inputmode="decimal" value="30" />
+          </div>
+          <div style="grid-column: span 3;align-self:center" class="muted">
+            If a side is <strong>all out</strong>, NRR counts <em>format overs</em> instead of overs faced/bowled.
+          </div>
+        </div>
+      </div>
+
       <div class="grid">
         <div><label for="rs">Runs Scored (RS)</label><input id="rs" inputmode="numeric" placeholder="e.g. 142"></div>
         <div><label for="of">Overs Faced (OF)</label><input id="of" inputmode="decimal" placeholder="e.g. 19.5"></div>
@@ -56,7 +69,12 @@
         <div><label for="ob">Overs Bowled (OB)</label><input id="ob" inputmode="decimal" placeholder="e.g. 20"></div>
       </div>
       <div class="space"></div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div class="inline">
+        <label class="inline"><input type="checkbox" id="ourAllOut"> Batting all out</label>
+        <label class="inline"><input type="checkbox" id="oppAllOut"> Opposition all out</label>
+      </div>
+      <div class="space"></div>
+      <div class="inline">
         <button class="btn" id="calc">Calculate</button>
         <button class="btn secondary" id="clear">Clear</button>
         <span class="warn" id="err"></span>
@@ -64,28 +82,35 @@
       <div class="result" id="nrrOut">NRR: —</div>
 
       <div class="hr"></div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><strong>Multi‑match aggregator</strong><span class="muted">(adds matches to compute tournament/team NRR)</span></div>
+      <div class="inline"><strong>Multi-match aggregator</strong><span class="muted">(adds matches to compute tournament/team NRR)</span></div>
       <div class="space"></div>
       <div class="row">
         <div><label for="rsA">RS</label><input id="rsA" inputmode="numeric" placeholder="e.g. 142"></div>
         <div><label for="ofA">OF</label><input id="ofA" inputmode="decimal" placeholder="e.g. 19.5"></div>
         <div><label for="rcA">RC</label><input id="rcA" inputmode="numeric" placeholder="e.g. 138"></div>
         <div><label for="obA">OB</label><input id="obA" inputmode="decimal" placeholder="e.g. 20"></div>
+        <div style="grid-column: span 2">
+          <label>&nbsp;</label>
+          <div class="inline">
+            <label class="inline"><input type="checkbox" id="rowOurAllOut"> Batting all out</label>
+            <label class="inline"><input type="checkbox" id="rowOppAllOut"> Opposition all out</label>
+          </div>
+        </div>
       </div>
       <div class="space"></div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <div class="inline">
         <button class="btn" id="add">Add Match</button>
         <button class="btn secondary" id="reset">Reset List</button>
         <span class="warn" id="errA"></span>
       </div>
       <div class="space"></div>
       <table id="tbl"><thead>
-        <tr><th>#</th><th class="right">RS</th><th class="right">OF</th><th class="right">RC</th><th class="right">OB</th><th class="right">Match NRR</th><th></th></tr>
+        <tr><th>#</th><th class="right">RS</th><th class="right">OF</th><th class="right">RC</th><th class="right">OB</th><th class="right">AllOut</th><th class="right">Match NRR</th><th></th></tr>
       </thead><tbody></tbody>
       <tfoot>
-        <tr><th>Totals</th><th class="right" id="tRS">0</th><th class="right" id="tOF">0</th><th class="right" id="tRC">0</th><th class="right" id="tOB">0</th><th class="right" id="tNRR">—</th><th></th></tr>
+        <tr><th>Totals</th><th class="right" id="tRS">0</th><th class="right" id="tOF">0</th><th class="right" id="tRC">0</th><th class="right" id="tOB">0</th><th></th><th class="right" id="tNRR">—</th><th></th></tr>
       </tfoot></table>
-      <footer>Tip: In cricket notation, <strong>47.3</strong> means 47 overs + 3 balls (balls are base‑6, not base‑10) — that equals <strong>47.5</strong> overs in decimal. Balls must be 0–5.</footer>
+      <footer>Tip: In cricket notation, <strong>47.3</strong> means 47 overs + 3 balls (balls are base-6, not base-10) — that equals <strong>47.5</strong> overs in decimal. Balls must be 0–5.</footer>
     </div>
   </div>
 
@@ -99,20 +124,18 @@
       if(n < 0) throw new Error(`${name}: cannot be negative`);
       return Math.trunc(n);
     }
-
     function parseOvers(v, name){
       const s = String(v).trim();
       if(!s) throw new Error(`${name}: required`);
       if(!/^\d+(?:\.(\d))?$/.test(s)) throw new Error(`${name}: use format like 19.5 (19 overs, 5 balls)`);
       if((s.match(/\./g)||[]).length > 1) throw new Error(`${name}: invalid overs format`);
-      const [oStr,bStr] = s.split('.')
+      const [oStr,bStr] = s.split('.');
       const overs = Number(oStr);
       const balls = bStr === undefined ? 0 : Number(bStr);
       if(!Number.isInteger(overs) || overs < 0) throw new Error(`${name}: invalid overs`);
       if(!Number.isInteger(balls) || balls < 0 || balls > 5) throw new Error(`${name}: balls must be 0–5`);
       return overs + balls/6;
     }
-
     function toOversString(oversFloat){
       const overs = Math.floor(oversFloat + 1e-9);
       const balls = Math.round((oversFloat - overs) * 6);
@@ -126,14 +149,25 @@
       const sign = n > 0 ? '+' : '';
       return sign + n.toFixed(3);
     }
+    function adjustedOvers(ofRaw, isAllOut, fmtOvers){
+      const f = Number(fmtOvers);
+      if(!(f>0)) throw new Error('Format overs must be a positive number');
+      return isAllOut ? f : ofRaw;
+    }
 
+    // Single calculator handlers (all-out aware)
     $('#calc').addEventListener('click', () => {
       $('#err').textContent = '';
       try{
         const RS = parseIntStrict($('#rs').value,'Runs Scored');
-        const OF = parseOvers($('#of').value,'Overs Faced');
+        const OFraw = parseOvers($('#of').value,'Overs Faced');
         const RC = parseIntStrict($('#rc').value,'Runs Conceded');
-        const OB = parseOvers($('#ob').value,'Overs Bowled');
+        const OBraw = parseOvers($('#ob').value,'Overs Bowled');
+        const fmt = Number($('#fmt').value);
+
+        const OF = adjustedOvers(OFraw, $('#ourAllOut').checked, fmt);
+        const OB = adjustedOvers(OBraw, $('#oppAllOut').checked, fmt);
+
         const nrr = computeNRR(RS,OF,RC,OB);
         $('#nrrOut').textContent = `NRR: ${formatNRR(nrr)}`;
       }catch(e){
@@ -141,27 +175,36 @@
         $('#nrrOut').textContent = 'NRR: —';
       }
     });
-
     $('#clear').addEventListener('click', ()=>{
       ['#rs','#of','#rc','#ob'].forEach(sel => $(sel).value='');
+      ['#ourAllOut','#oppAllOut'].forEach(sel=>$(sel).checked=false);
       $('#err').textContent = '';
       $('#nrrOut').textContent = 'NRR: —';
     });
 
+    // Aggregator (per-row all-out flags)
     const rows = [];
     function refresh(){
       const tbody = $('#tbl tbody');
       tbody.innerHTML = '';
       let tRS=0,tOF=0,tRC=0,tOB=0;
+      const fmt = Number($('#fmt').value)||0;
+
       rows.forEach((r,idx)=>{
-        tRS+=r.RS; tOF+=r.OF; tRC+=r.RC; tOB+=r.OB;
+        const OFadj = adjustedOvers(r.OF, r.ourAllOut, fmt);
+        const OBadj = adjustedOvers(r.OB, r.oppAllOut, fmt);
+
+        tRS+=r.RS; tOF+=OFadj; tRC+=r.RC; tOB+=OBadj;
+
         const tr = document.createElement('tr');
-        const mNRR = computeNRR(r.RS,r.OF,r.RC,r.OB);
+        const mNRR = computeNRR(r.RS,OFadj,r.RC,OBadj);
+        const flags = `${r.ourAllOut?'A':''}${r.oppAllOut?'/B':''}` || '-';
         tr.innerHTML = `<td>${idx+1}</td>
           <td class="right">${r.RS}</td>
-          <td class="right">${toOversString(r.OF)}</td>
+          <td class="right">${toOversString(OFadj)}</td>
           <td class="right">${r.RC}</td>
-          <td class="right">${toOversString(r.OB)}</td>
+          <td class="right">${toOversString(OBadj)}</td>
+          <td class="right">${flags}</td>
           <td class="right">${formatNRR(mNRR)}</td>
           <td class="right"><button class="btn secondary" data-i="${idx}">Remove</button></td>`;
         tbody.appendChild(tr);
@@ -171,12 +214,12 @@
       $('#tRC').textContent = String(tRC);
       $('#tOB').textContent = toOversString(tOB);
       $('#tNRR').textContent = (tOF>0 && tOB>0) ? formatNRR(computeNRR(tRS,tOF,tRC,tOB)) : '—';
+
       $$('#tbl button[data-i]').forEach(btn=>btn.addEventListener('click',ev=>{
         rows.splice(Number(ev.currentTarget.getAttribute('data-i')),1);
         refresh();
       }));
     }
-
     $('#add').addEventListener('click',()=>{
       $('#errA').textContent = '';
       try{
@@ -184,14 +227,16 @@
           RS: parseIntStrict($('#rsA').value,'RS'),
           OF: parseOvers($('#ofA').value,'OF'),
           RC: parseIntStrict($('#rcA').value,'RC'),
-          OB: parseOvers($('#obA').value,'OB')
+          OB: parseOvers($('#obA').value,'OB'),
+          ourAllOut: $('#rowOurAllOut').checked,
+          oppAllOut: $('#rowOppAllOut').checked
         };
         rows.push(row);
         ['#rsA','#ofA','#rcA','#obA'].forEach(sel => $(sel).value='');
+        ['#rowOurAllOut','#rowOppAllOut'].forEach(sel=>$(sel).checked=false);
         refresh();
       }catch(e){ $('#errA').textContent = e.message; }
     });
-
     $('#reset').addEventListener('click',()=>{ rows.length = 0; refresh(); });
     refresh();
   </script>
