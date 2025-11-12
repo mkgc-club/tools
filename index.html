@@ -3,61 +3,110 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Net Run Rate Calculator — All-Out Aware</title>
+  <title>MKGC — Net Run Rate Calculator</title>
   <meta name="description" content="NRR calculator with aggregator and all-out adjustment (uses format overs when a side is all out)." />
   <style>
-    :root{--bg:#0b1020;--card:#0f172a;--fg:#e5e7eb;--muted:#9ca3af;--ring:#243048;--accent:#60a5fa}
+    /* ===== MKGC light theme inspired by bcci.tv ===== */
+    :root{
+      --navy:#0a1e49;
+      --navy-2:#0f275e;
+      --gold:#c89d2d;
+      --gold-2:#e0b84a;
+      --ink:#0b1020;
+      --muted:#5b6b86;
+      --ring:#e5e8f0;
+      --card:#ffffff;
+      --bg:#ffffff;
+      --shadow:0 8px 24px rgba(10,30,73,.08);
+    }
     *{box-sizing:border-box}
-    body{margin:0;background:linear-gradient(180deg,#0b1020 0%,#0b1226 100%);color:var(--fg);font:16px/1.5 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Arial}
-    .max{max-width:960px;margin:40px auto;padding:0 16px}
-    .card{background:linear-gradient(180deg,#0b1226, #0b1226), var(--card);border:1px solid var(--ring);border-radius:16px;padding:18px;box-shadow:0 12px 40px rgba(0,0,0,.25)}
-    h1{font-size:24px;margin:0 0 6px}
+    html,body{height:100%}
+    body{margin:0;background:var(--bg);color:var(--ink);font:15.5px/1.6 ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Arial}
+    a{color:inherit}
+
+    .max{max-width:1100px;margin:0 auto;padding:0 20px}
+    header{
+      background:linear-gradient(180deg,var(--navy-2),var(--navy));
+      color:#fff; position:sticky; top:0; z-index:20;
+      box-shadow:0 6px 16px rgba(0,0,0,.2);
+    }
+    nav.wrap{display:flex;align-items:center;gap:16px;padding:12px 20px}
+    .brand{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:.4px;text-decoration:none;color:inherit}
+    .brand img{height:40px;width:auto;display:block}
+    @media (max-width:560px){.brand img{height:34px}}
+    .navlinks{display:flex;gap:14px;margin-left:auto}
+    .navlinks a{padding:8px 10px;border-radius:10px;color:#eaf2ff;text-decoration:none;opacity:.9}
+    .navlinks a:hover{opacity:1;background:rgba(255,255,255,.1)}
+    .navlinks a.active{background:rgba(224,184,74,.22);outline:1px solid rgba(224,184,74,.35)}
+    .hero{background:linear-gradient(180deg,rgba(255,255,255,1),rgba(255,255,255,.9));border-bottom:1px solid var(--ring)}
+    .hero .max{padding:18px 20px}
+    .hero h1{margin:0;font-size:26px;color:#0a1e49}
+    .hero p{margin:6px 0 0;color:#294065}
+
+    .container{max-width:1100px;margin:28px auto;padding:0 20px}
+    .card{background:var(--card);border:1px solid var(--ring);border-radius:16px;padding:18px;box-shadow:var(--shadow)}
+    h1{font-size:22px;margin:0 0 6px}
+    h2{font-size:18px;margin:0 0 10px}
     p{margin:0 0 10px;color:var(--muted)}
-    .tag{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid var(--ring);color:var(--muted);font-size:12px}
-    .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
-    .row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;align-items:end}
-    label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
-    input, select{width:100%;padding:10px;border-radius:10px;border:1px solid var(--ring);background:#0e162b;color:var(--fg)}
-    input:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in oklab,var(--accent) 25%, transparent)}
-    .btn{cursor:pointer;padding:10px 12px;border-radius:10px;border:1px solid var(--ring);background:var(--accent);color:#0b1020;font-weight:700}
-    .btn.secondary{background:transparent;color:var(--fg)}
+
+    .grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+    .row{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:end}
+    label{display:block;font-size:12px;color:#566981;margin:0 0 6px}
+    input,select{width:100%;padding:11px 12px;border-radius:12px;border:1px solid #d8deea;background:#fff;color:#0a1733}
+    input:focus,select:focus{outline:none;border-color:var(--gold-2);box-shadow:0 0 0 3px rgba(224,184,74,.2)}
+
+    .btn{cursor:pointer;padding:10px 14px;border-radius:999px;border:1px solid rgba(224,184,74,.6);background:var(--gold-2);color:#08163a;font-weight:800;letter-spacing:.2px}
+    .btn:hover{filter:brightness(1.04)}
+    .btn.secondary{background:#fff;color:#0a1733;border-color:#cfd7e6}
+    .btn.secondary:hover{background:#f6f8fc}
+
     .muted{color:var(--muted)}
-    .space{height:6px}
-    .hr{height:1px;background:var(--ring);margin:14px 0}
-    .result{margin-top:12px;font-size:18px;font-weight:800}
-    table{width:100%;border-collapse:collapse}
-    th,td{text-align:left;padding:8px;border-bottom:1px solid var(--ring)}
-    th{font-size:12px;color:var(--muted);font-weight:600}
+    .space{height:8px}
+    .hr{height:1px;background:var(--ring);margin:16px 0}
+    .result{margin-top:12px;font-size:18px;font-weight:800;color:#0a1e49}
+
+    table{width:100%;border-collapse:separate;border-spacing:0}
+    th,td{text-align:left;padding:9px 10px;border-bottom:1px solid #eef2f7}
+    th{font-size:12px;color:#27406a;font-weight:800;background:#f7f9fc}
+    tbody tr:hover{background:#fafcff}
     .right{text-align:right}
-    .warn{color:#fca5a5;font-size:12px}
-    .inline{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-    footer{margin:20px 0;color:var(--muted);font-size:12px}
-    @media (max-width:840px){.grid,.row{grid-template-columns:repeat(2,minmax(0,1fr))}}
-    @media (max-width:520px){.grid,.row{grid-template-columns:1fr}}
+    .warn{color:#b00000;font-size:12px}
+    footer{margin:22px 0;color:#53657f;font-size:12px;text-align:center}
+
+    @media (max-width:980px){.grid,.row{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:560px){.grid,.row{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
-  <header style="background:#0b1226;border-bottom:1px solid #243048;position:sticky;top:0;z-index:10">
-    <nav style="max-width:960px;margin:0 auto;padding:10px 16px;display:flex;gap:14px;align-items:center;">
-      <strong style="margin-right:auto">MKGC Tools</strong>
-      <a href="./" style="text-decoration:none;color:#e5e7eb">Calculator</a>
-      <a href="./tournament.html" style="text-decoration:none;color:#e5e7eb">Tournament &amp; Table</a>
+  <header>
+    <nav class="wrap max">
+      <a class="brand" href="./"><img src="mkgc-logo.png" alt="MK Gully Cricket logo"><span>MKGC Tools</span></a>
+      <div class="navlinks">
+        <a class="active" href="./">Calculator</a>
+        <a href="./tournament.html">Tournament &amp; Table</a>
+      </div>
     </nav>
+    <div class="hero">
+      <div class="max">
+        <h1>Net Run Rate Calculator</h1>
+        <p>All-out aware NRR and multi-match aggregator.</p>
+      </div>
+    </div>
   </header>
 
-  <div class="max">
+  <main class="container">
     <div class="card">
-      <h1>Net Run Rate Calculator</h1>
-      <p><span class="tag">NRR = (RS/OF) − (RC/OB)</span> <span class="muted">&nbsp;Type overs like <strong>19.5</strong> (19 overs, 5 balls)</span></p>
+      <h1>NRR Calculator</h1>
+      <p><span class="muted">NRR = (RS/OF) − (RC/OB). Enter overs like <strong>19.5</strong> (19 overs, 5 balls).</span></p>
 
-      <div class="card" style="background:#0b1226;border:1px solid var(--ring);box-shadow:none;margin:10px 0 14px">
+      <div class="card" style="border:1px solid #e6ebf3;background:#fbfdff;margin:10px 0 14px">
         <div class="row">
           <div>
             <label for="fmt">Format (overs per side)</label>
             <input id="fmt" inputmode="decimal" value="30" />
           </div>
           <div style="grid-column: span 3;align-self:center" class="muted">
-            If a side is <strong>all out</strong>, NRR counts <em>format overs</em> instead of overs faced/bowled.
+            If a side is <strong>all out</strong>, NRR uses <em>format overs</em> instead of overs faced/bowled.
           </div>
         </div>
       </div>
@@ -69,12 +118,12 @@
         <div><label for="ob">Overs Bowled (OB)</label><input id="ob" inputmode="decimal" placeholder="e.g. 20"></div>
       </div>
       <div class="space"></div>
-      <div class="inline">
-        <label class="inline"><input type="checkbox" id="ourAllOut"> Batting all out</label>
-        <label class="inline"><input type="checkbox" id="oppAllOut"> Opposition all out</label>
+      <div class="inline" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="ourAllOut"> Batting all out</label>
+        <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="oppAllOut"> Opposition all out</label>
       </div>
       <div class="space"></div>
-      <div class="inline">
+      <div class="inline" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <button class="btn" id="calc">Calculate</button>
         <button class="btn secondary" id="clear">Clear</button>
         <span class="warn" id="err"></span>
@@ -82,7 +131,7 @@
       <div class="result" id="nrrOut">NRR: —</div>
 
       <div class="hr"></div>
-      <div class="inline"><strong>Multi-match aggregator</strong><span class="muted">(adds matches to compute tournament/team NRR)</span></div>
+      <div class="inline" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><strong>Multi-match aggregator</strong><span class="muted">(adds matches to compute tournament/team NRR)</span></div>
       <div class="space"></div>
       <div class="row">
         <div><label for="rsA">RS</label><input id="rsA" inputmode="numeric" placeholder="e.g. 142"></div>
@@ -91,14 +140,14 @@
         <div><label for="obA">OB</label><input id="obA" inputmode="decimal" placeholder="e.g. 20"></div>
         <div style="grid-column: span 2">
           <label>&nbsp;</label>
-          <div class="inline">
-            <label class="inline"><input type="checkbox" id="rowOurAllOut"> Batting all out</label>
-            <label class="inline"><input type="checkbox" id="rowOppAllOut"> Opposition all out</label>
+          <div class="inline" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+            <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="rowOurAllOut"> Batting all out</label>
+            <label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="rowOppAllOut"> Opposition all out</label>
           </div>
         </div>
       </div>
       <div class="space"></div>
-      <div class="inline">
+      <div class="inline" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <button class="btn" id="add">Add Match</button>
         <button class="btn secondary" id="reset">Reset List</button>
         <span class="warn" id="errA"></span>
@@ -112,7 +161,7 @@
       </tfoot></table>
       <footer>Tip: In cricket notation, <strong>47.3</strong> means 47 overs + 3 balls (balls are base-6, not base-10) — that equals <strong>47.5</strong> overs in decimal. Balls must be 0–5.</footer>
     </div>
-  </div>
+  </main>
 
   <script>
     const $ = (s, r=document)=>r.querySelector(s);
@@ -120,15 +169,15 @@
 
     function parseIntStrict(v, name){
       const n = Number(v);
-      if(!Number.isFinite(n) || !/^\s*\d+\s*$/.test(String(v))) throw new Error(`${name}: enter a whole number`);
+      if(!Number.isFinite(n) || !/^\\s*\\d+\\s*$/.test(String(v))) throw new Error(`${name}: enter a whole number`);
       if(n < 0) throw new Error(`${name}: cannot be negative`);
       return Math.trunc(n);
     }
     function parseOvers(v, name){
       const s = String(v).trim();
       if(!s) throw new Error(`${name}: required`);
-      if(!/^\d+(?:\.(\d))?$/.test(s)) throw new Error(`${name}: use format like 19.5 (19 overs, 5 balls)`);
-      if((s.match(/\./g)||[]).length > 1) throw new Error(`${name}: invalid overs format`);
+      if(!/^\\d+(?:\\.(\\d))?$/.test(s)) throw new Error(`${name}: use format like 19.5 (19 overs, 5 balls)`);
+      if((s.match(/\\./g)||[]).length > 1) throw new Error(`${name}: invalid overs format`);
       const [oStr,bStr] = s.split('.');
       const overs = Number(oStr);
       const balls = bStr === undefined ? 0 : Number(bStr);
